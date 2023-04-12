@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>自用</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				color: #000;
+				font-size: 12px;
+				font-family: Arial, sans-serif;
+				-webkit-tap-highlight-color: transparent;
+				outline: none;
+			}
+
+			body {
+				background: transparent;
+				position: fixed;
+				left: 0;
+				top: 0;
+				width: 100%;
+				height: 100%;
+			}
+
+			/*菜单*/
+			*:not(input, checkbox, textarea) {
+				/*禁止文本选择*/
+				-webkit-touch-callout: none;
+				-webkit-user-select: none;
+				user-select: none;
+				/* Non-prefixed version, currently */
+			}
+
+			.popup_container {
+				position: absolute;
+				z-index: 1000;
+				left: 50%;
+				top: 0;
+			}
+
+			#H5AlertView {
+				width: 220px;
+				height: 300px;
+				position: absolute;
+				left: -110px;
+				top: 150px;
+				text-align: center;
+				zoom: 0.8;
+			}
+
+			#title-text {
+				padding-top: 0px;
+				font-size: 18px;
+				color: #494949;
+			}
+
+			#info-text {
+				padding: 10px;
+				color: #494949;
+			}
+
+			#content-view {
+				z-index: 0;
+				background: #fff;
+				position: relative;
+				top: 0px;
+				border: 1px solid #E8E8E8;
+				border-radius: 5px;
+				padding: 10px;
+			}
+
+			button {
+				width: 100%;
+				height: 40px;
+				color: #fff;
+				background-color: #23B574;
+				display: inline-block;
+				cursor: pointer;
+				text-align: center;
+				text-decoration: none;
+				outline: none;
+				border: none;
+				border-radius: 3px;
+				padding: 0 8px;
+				margin: 5px 0;
+				font-size: 15px;
+			}
+
+			button:active {
+				background-color: #007E40;
+				transform: translateY(2px);
+			}
+		</style>
+	</head>
+
+	<body>
+		<!--悬浮菜单-->
+		<div class="popup_container">
+			<div id="H5AlertView">
+				<script>
+					function draw() {
+						window.draw_state = 1;
+						onCache();
+					}
+
+					function unDraw() {
+						clearCtx();
+						offCache();
+						window.draw_state = 0;
+					}
+
+					function hideMenu() {
+						var menu = document.querySelector("#H5AlertView");
+						menu.style.display = 'none';
+						//隐藏菜单之后, 设置触控穿透悬浮窗口 
+						setWindowTouch(false);
+					}
+				</script>
+				<div id="content-view">
+					<div>
+						<button onclick="draw()">开启绘制</button>
+						<button onclick="unDraw()">关闭绘制</button>
+						<button onclick="hideMenu()">隐藏菜单</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+	<script>
+		document.body.addEventListener('touchstart', function() {});
+		setButtonImage(
+			"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAU0AAAFNCAMAAACzLs32AAABRFBMVEUAAAD//Xf//Xv//Yf//pL//p3//rv//sD//sP//sX//or//sX//7z//qr//sT//r///pL//8X//8P//ar//ZD//sL//8r//8b//Y7//sT//Y///sP//sX//ZL//ZL//ZL//a7//+r//JH//sX//sb//ab//sT//sX//rP//ZX//8f//JX//sP//sb//aX//sL//sT//JH//ZT//sT//sb//sb//Jb//JP//aj//a3//sX//sT//Zb//qz//rv//JL//sT//Jb//Jf//rb//sD//s7//Jj//rb//Z7//aH//r7//aD//cv//qb//aT//az//bP//aj//b7//cz//bv//ab//sD//bv//bv//sX//bH//bL//bv//bz//s7//bf//aT//bD//r3//9X//qP//rD//+H//qv//bH//+z//rX///c8M9+tAAAAa3RSTlMABAoPFRsgJywxITY8MT9CJ0VLNyxQU2EyWDhdaEY9QUpvTnB3YH+HdVSNYJKWa5ufaFukqq58dZCFsbaDqK1uuoqWuMTMpL+sucud3sPL3tTU0O7k7b/Z4f7w4+nx/vj46/3//fz//Pb//oJw/EwAAA02SURBVHgB7MGBAAAAAMOg+1MfZNUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICks1sGKgjDMBTM4f9/8wl0D1itlQrg3JYASepzzQ7CQhXs6pwc1fjHtpxKvWmuduVU6E1zrSenSi9Fk9kr05U2ryXz1DQXBpMhRIzfND9cZadBdkcWUeW3a9PkGzmWtNjK95wQf43zcTiabF4FQAsFJIkiqu1P9necmSYDYkNZgIVlv7y3YJHHEg3X2d4ZjWSSZEi0gWXFJJXK66JkN+2elyZ7bPmoIOKTvLtQbmRZ8jD+y+qqbmlszxxY3vd/smU64PFYaqjKS7EehRcDLuozSgr84p+Z1SxSZORtxiIQGN4okDLl/2Py5J9upYc3QkT8N4YjiBBBRCjxK4qvlBIiRBK/BmSAwLv+8SdvMwSBuPkSiOCtX0KUECUiUyAoJcLtro+ICEUA70W6g0oXN+0tkuQ2XQDmIQoRHSAiDfIAEvJrr7h9+Xuq9Op3SmQgpcjISDLwXuZbOJXoM7DN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"
+		); //从网址链接加载并替换悬浮按钮图标 
+		function refreshProcList() {
+			var procs = h5gg.getProcList();
+			var game;
+			var name;
+			for (var i = 0; i < h5gg.getProcList().length; i++) {
+				if (h5gg.getProcList()[i].name == "ShadowTrackerExt") {
+					game = h5gg.getProcList()[i];
+					h5gg.setTargetProc(game.pid);
+					name = game.name;
+					h5gg.clearResults();
+				}
+			}
+			if (name == "ShadowTrackerExt") {
+				/*window.location = "http://xxxxx.com";*/
+			} else {
+				alert("请进游戏");
+				refreshProcList()
+			}
+		}
+		refreshProcList()
+		//脚本放在最后面, body加载完之后再执行 
+		//激活webkit的button:active 
+		document.body.addEventListener('touchstart', function() {});
+		//设置不可拖动 
+		setWindowDrag(0, 0, 0, 0);
+		//设置按照屏幕像素尺寸绘图(高清模式) 
+		var iosScale = window.devicePixelRatio;
+		var sWidth = 0; //屏幕宽 
+		var sHeight = 0; //屏幕高 
+		//创建画布 
+		var canvasDom = document.createElement("canvas");
+		document.body.appendChild(canvasDom);
+		canvasDom.style.height = "100%";
+		canvasDom.style.width = "100%";
+		var layout = function() {
+			//window.orientation是设备握持方向, 不是屏幕显示方向 
+			if (window.lastorientation == window.orientation) return;
+			window.lastorientation = window.orientation;
+			//window.screen中的宽高不会随着屏幕旋转更新(只会在初始化的时候固定) 
+			if (Math.abs(window.orientation) == 90) {
+				//横屏模式 
+				setWindowRect(0, 0, window.screen.height, window.screen.width);
+				canvasDom.width = window.screen.height * iosScale;
+				canvasDom.height = window.screen.width * iosScale;
+				sWidth = window.screen.height;
+				sHeight = window.screen.width;
+			} else {
+				//竖屏模式 
+				setWindowRect(0, 0, window.screen.width, window.screen.height);
+				canvasDom.height = window.screen.height * iosScale;
+				canvasDom.width = window.screen.width * iosScale;
+				sWidth = window.screen.width;
+				sHeight = window.screen.height;
+			}
+		}
+		layout(); //设置旋转屏幕时自动调整布局和画布 
+		window.addEventListener("orientationchange", layout, false);
+		//*设置自定义的悬浮按钮图标点击动作 
+		setButtonAction(function() {
+			var menu = document.querySelector("#H5AlertView");
+			if (menu.style.display == 'none') {
+				menu.style.display = 'block';
+				//隐藏菜单之后, 设置触控穿透悬浮窗口 
+				setWindowTouch(true);
+			} else {
+				menu.style.display = 'none';
+				//显示菜单之后, 设置触控不可穿透悬浮窗口 
+				setWindowTouch(false);
+			}
+		}); //*/ 
+		var ctx = canvasDom.getContext('2d');
+		setLineWidth(iosScale);
+		var fontFamily = " Arial";
+		var cacheTimer = null; //数据缓存计时器，减少遍历次数，提高性能 
+		var drawTimer = null; //绘图计时器，控制帧率 
+		var actorCache = []; //对象地址缓存 
+		var baseAddr = Number(h5gg.getRangesList(0)[0].start); //aslr只读一次，能减少🐔🎱那么一点性能消耗 
+		var GWorld = 0; //世界全局变量，公用 
+		function drawCache() {
+			if (isNull(GWorld)) return;
+			var Level = readLong(GWorld + 0x90); //Level* PersistentLevel; 
+			var ActorArray = readLong(Level + 0xA0); //LineBatchComponent* LineBatcher; 
+			var ActorCount = readInt(Level + 0xA8); //LineBatchComponent* PersistentLineBatcher; 
+			var tempArr = [];
+			for (var i = 0; i < ActorCount; i++) {
+				var actor = readLong(ActorArray + i * 8);
+				if (isNull(actor)) continue;
+
+
+				const ides = readFloat(actor + 0xF30).toString().slice(0, 1) //bool bDead; 
+				if (ides != 2) continue;
+				var hpmax = readFloat(actor + 0xed0); //float HealthMax;// 
+				if (hpmax == 100 || hpmax == 110 || hpmax == 120 ||
+					hpmax == 130 || hpmax == 140 || hpmax == 150 ||
+					hpmax == 160 || hpmax == 170 || hpmax == 180 ||
+					hpmax == 190 || hpmax == 200) {
+					tempArr.push(actor);
+				}
+			}
+			actorCache = tempArr;
+		}
+		var mySelf = 0;
+		myTeam = 0;
+
+		function shadowDraw() {
+			clearCtx();
+			GWorld = readLong(baseAddr + 0xAAB00C0); //世界基址 
+			if (isNull(GWorld)) return;
+			//获取自己 
+			var NetDriver = readLong(GWorld + 0x98); //NetDriver* NetDriver 
+			var ServerConnection = readLong(NetDriver + 0x88); //NetConnection* ServerConnection 
+			var localPlayerController = readLong(ServerConnection + 0x30);
+			var mySelf = readLong(localPlayerController + 0x6D0); //Pawn* Pawn; 
+			//if (isNull(mySelf)) return; 
+			var teamCopy = readInt(mySelf + 0xbc0); // int TeamID   搜索第二个 
+			myTeam = teamCopy <= 100 ? teamCopy : myTeam
+			var playerCameraManager = readLong(localPlayerController + 0x758); //PlayerCameraManager* PlayerCameraManager 
+			var povAddr = playerCameraManager + 0x12e0 + 0x10; //TViewTarget ViewTarget 
+			var camViewInfo = {
+				Location: {
+					X: readFloat(povAddr),
+					Y: readFloat(povAddr + 4),
+					Z: readFloat(povAddr + 4 + 4)
+				},
+				Rotation: {
+					Pitch: readFloat(povAddr + 0x18),
+					Yaw: readFloat(povAddr + 0x18 + 4),
+					Roll: readFloat(povAddr + 0x18 + 4 + 4)
+				},
+				FOV: readFloat(povAddr + 0x24)
+			}
+			//一帧只计算一次，减少性能消耗 
+			var tempMatrix = RotatorToMatrix(camViewInfo.Rotation);
+			var playerCout = 0;
+			for (var i = 0; i < actorCache.length; i++) {
+				var actor = actorCache[i]; //排除自己 
+				if (mySelf == actor) continue;
+				var team = readInt(actor + 0xbc0); // int TeamID   搜索第二个 
+				if (myTeam == team || team == -1) continue;
+				//死亡判断 bDead 
+				var bDead = readInt(actor + 0xf30) // bool bDead 
+				if (bDead != 2) continue;
+
+				const hpmax = readFloat(actor + 0xed0); //float HealthMax;     
+				//获取生命值 
+				const hp = readFloat(actor + 0xec8); //float Health; 
+				const renhp = 100 * hp / hpmax;
+				//获取人物状态 
+				const StatusOffset = readInt(actor + 0x1158); //PawnStateRepSyncData PawnStateRepSyncData 
+
+				var rootComponent = readLong(actor + 0x270); //SceneComponent* RootComponent 
+				if (isNull(rootComponent)) continue;
+
+				var worldPos = {
+					X: readFloat(rootComponent +
+						0x1D0
+					), //CurveVector* CurveForRootScale; 第二个    ?? // FrontendHUDExtension* Extension ?? Texture2D* CrossHairShotGun ?? 
+					Y: readFloat(rootComponent + 0x1D0 + 4),
+					Z: readFloat(rootComponent + 0x1D0 + 4 + 4)
+				}
+				var distX = (worldPos.X - camViewInfo.Location.X) / 100;
+				var distY = (worldPos.Y - camViewInfo.Location.Y) / 100;
+				var distance = (distX * distX) + (distY * distY);
+				var distZ = (worldPos.Z - camViewInfo.Location.Z) / 100;
+				distance = Math.ceil(Math.sqrt((distZ * distZ) + distance));
+				const angleOffset = readFloat(actor + 0x550); //Pawn* PawnOwner; ?? 
+				var zb1 = {
+					X: worldPos.X,
+					Y: worldPos.Y,
+					Z: worldPos.Z + 80.0
+				}
+				var zb2 = {
+					X: worldPos.X,
+					Y: worldPos.Y,
+					Z: worldPos.Z - 80.0
+				}
+				var mySelf = readLong(localPlayerController + 0x6d0); //Pawn* Pawn; 
+				var fkzb1 = world2Screen(zb1, camViewInfo, tempMatrix);
+				var fkzb2 = world2Screen(zb2, camViewInfo, tempMatrix);
+				var fkgao = fkzb2.Y - fkzb1.Y;
+				var fkkuan = fkgao / 2;
+				var bIsAI = Number(h5gg.getValue(actor + 0xbdc, "U8")); //bool bIsAI; 
+				dx = Math.abs(sWidth / 2 - fkzb1.X);
+				dy = Math.abs(sHeight / 2 - fkzb1.Y);
+				/***************骨骼函数*******************/
+				const Mesh = readLong(actor + 0x750); //SkeletalMeshComponent* Mesh; ？？ 
+				const human = Mesh + 0x1C0; //BoxSphereBounds[] SubLocalBounds;   ？？ 
+				const boneArray = readLong(Mesh + 0x700); // StaticMesh* StaticMesh; ？？ 
+				const meshTrans = {
+					Rotation: {
+						x: readFloat(human),
+						y: readFloat(human + 4),
+						z: readFloat(human + 8),
+						w: readFloat(human + 12),
+					},
+					Translation: {
+						X: readFloat(human + 16),
+						Y: readFloat(human + 20),
+						Z: readFloat(human + 24),
+						W: readFloat(human + 28),
+					},
+					Scale3D: {
+						X: readFloat(human + 32),
+						Y: readFloat(human + 36),
+						Z: readFloat(human + 40),
+					},
+				}
+				const c2wMatrix = TransformToMatrix(meshTrans);
+				bonetou = getBoneWorldPos(boneArray + 6 * 48, c2wMatrix); //头 
+				const rwg = 88; //z 
+				const rwk = 33; //x,y 
+				const rwk2 = (Math.sqrt(2 * rwk * rwk));
+				//3d方框上 
+				const zqs = {
+					X: worldPos.X + rwk2 * Math.cos((angleOffset + 135) * Math.PI / 180),
+					Y: worldPos.Y + rwk2 * Math.sin((angleOffset + 135) * Math.PI / 180),
+					Z: bonetou.Z + 16
+				}
+				const yqs = {
+					X: worldPos.X + rwk2 * Math.cos((angleOffset + 45) * Math.PI / 180),
+					Y: worldPos.Y + rwk2 * Math.sin((angleOffset + 45) * Math.PI / 180),
+					Z: bonetou.Z + 16
+				}
+				const zhs = {
+					X: worldPos.X + rwk2 * Math.cos((angleOffset + 225) * Math.PI / 180),
+					Y: worldPos.Y + rwk2 * Math.sin((angleOffset + 225) * Math.PI / 180),
+					Z: bonetou.Z + 16
+				}
+				const yhs = {
+					X: worldPos.X + rwk2 * Math.cos((angleOffset + 315) * Math.PI / 180),
+					Y: worldPos.Y + rwk2 * Math.sin((angleOffset + 315) * Math.PI / 180),
+					Z: bonetou.Z + 16
+				}
+
+				//3d方框下 
+				const zqx = {
+					X: worldPos.X + rwk2 * Math.cos((angleOffset + 135) * Math.PI / 180),
+					Y: worldPos.Y + rwk2 * Math.sin((angleOffset + 135) * Math.PI / 180),
+					Z: worldPos.Z - rwg
+				}
+				const yqx = {
+					X: worldPos.X + rwk2 * Math.cos((angleOffset + 45) * Math.PI / 180),
+					Y: worldPos.Y + rwk2 * Math.sin((angleOffset + 45) * Math.PI / 180),
+					Z: worldPos.Z - rwg
+				}
+				const zhx = {
+					X: worldPos.X + rwk2 * Math.cos((angleOffset + 225) * Math.PI / 180),
+					Y: worldPos.Y + rwk2 * Math.sin((angleOffset + 225) * Math.PI / 180),
+					Z: worldPos.Z - rwg
+				}
+				const yhx = {
+					X: worldPos.X + rwk2 * Math.cos((angleOffset + 315) * Math.PI / 180),
+					Y: worldPos.Y + rwk2 * Math.sin((angleOffset + 315) * Math.PI / 180),
+					Z: worldPos.Z - rwg
+				}
+				//上 
+				const zhs1 = world2Screen(zhs, camViewInfo, tempMatrix);
+				const yhs1 = world2Screen(yhs, camViewInfo, tempMatrix);
+				const zqs1 = world2Screen(zqs, camViewInfo, tempMatrix);
+				const yqs1 = world2Screen(yqs, camViewInfo, tempMatrix);
+				//下 
+				const zhx1 = world2Screen(zhx, camViewInfo, tempMatrix);
+				const yhx1 = world2Screen(yhx, camViewInfo, tempMatrix);
+				const zqx1 = world2Screen(zqx, camViewInfo, tempMatrix);
+				const yqx1 = world2Screen(yqx, camViewInfo, tempMatrix);
+				/***************3D框*******************/
+				/***************骨骼函数*******************/
+
+				const actorInfo = {
+					x: fkzb1.X,
+					y: fkzb1.Y,
+					w: fkkuan,
+					h: fkgao,
+					hp: renhp,
+					isAI: bIsAI,
+					team: team,
+					name: name,
+					zt: StatusOffset,
+					dis: distance,
+
+					//3dx 
+					zhsx: zhs1.X,
+					yhsx: yhs1.X,
+					zqsx: zqs1.X,
+					yqsx: yqs1.X,
+
+					zhxx: zhx1.X,
+					yhxx: yhx1.X,
+					zqxx: zqx1.X,
+					yqxx: yqx1.X,
+
+					//3dy 
+					zhsy: zhs1.Y,
+					yhsy: yhs1.Y,
+					zqsy: zqs1.Y,
+					yqsy: yqs1.Y,
+
+					zhxy: zhx1.Y,
+					yhxy: yhx1.Y,
+					zqxy: zqx1.Y,
+					yqxy: yqx1.Y,
+
+				};
+				if (distance <= 300) {
+					if (StatusOffset == 524288 || StatusOffset == 524289) {
+
+					}else{
+						shadowInfo(actorInfo);
+						playerCout++;
+					}
+
+					
+				}
+			}
+			if (playerCout > 0) {
+				drawText(playerCout, sWidth / 2, -1, 23, "rgba(255, 255, 255, 0.9)", "center", true);
+			}
+
+
+
+		}
+		//封装数据绘制函数 
+		function shadowInfo(objectInfo) {
+			var color = "rgba(255, 255, 0, 0.9)";
+			if (objectInfo.isAI) color = "#FFF";
+			//人机判断 是的话对标变为AI 
+			if (objectInfo.isAI) objectInfo.team = "AI";
+
+			//超出屏幕只绘制背敌 
+			if (objectInfo.x < 0 || objectInfo.y < 0 || objectInfo.x > sWidth || objectInfo.y > sHeight) {
+				if (objectInfo.x < 0) objectInfo.x = 20;
+				if (objectInfo.y < 0) objectInfo.y = 20;
+				if (objectInfo.x > sWidth) objectInfo.x = sWidth - 20;
+				if (objectInfo.y > sHeight) objectInfo.y = sHeight - 20;
+				drawCircular(objectInfo.x, objectInfo.y, 100, 15, objectInfo.isAI ? "rgba(0,255,0,0.6)" : "rgba(255,0,0,0.6)",
+					true);
+				drawText(`${objectInfo.dis}m`, objectInfo.x, objectInfo.y - 16, 10, "white", true);
+				return;
+			}
+
+			//射线 
+			//drawLine(sWidth / 2, 50, objectInfo.x, objectInfo.yqsy - 18, color); 
+			//方框 
+			//drawMyRect(objectInfo.x - objectInfo.w / 2, objectInfo.y, objectInfo.w, objectInfo.h, "#00ff7f", false); 
+			//drawMyRect(objectInfo.x - objectInfo.w / 2, objectInfo.yqsy, objectInfo.w, objectInfo.yqxy - objectInfo.yqsy,"rgba(255, 255, 0, 0.9)", false); 
+			//对标 
+			drawRect(objectInfo.x - 20, objectInfo.yqsy - 19, 14, 14, "rgba(255, 85, 255, 0.9)", true); //队伍编号背景 
+			drawText(objectInfo.team, objectInfo.x - 13, objectInfo.yqsy - 28, 10, "rgba(255, 255, 255, 0.9)", "center",
+				true); //队伍编号 
+			//距离 
+			drawRect(objectInfo.x - 6, objectInfo.yqsy - 19, 24, 14, "rgba(85, 170, 255, 0.9)", true); //距离背景 
+			drawText("" + objectInfo.dis + "m", objectInfo.x + 6, objectInfo.yqsy - 28, 10, "rgba(255, 255, 255, 0.9)",
+				true); //距离 
+			//血条 
+			drawRect(objectInfo.x - 20, objectInfo.yqsy - 23, 38, 4, "rgba(255, 255, 255, 0.9)", false); //血条框 
+			drawRect(objectInfo.x - 19, objectInfo.yqsy - 22, Math.ceil(objectInfo.hp / 2.777), 2, "rgba(255, 0, 0, 0.9)",
+				true); //血条填充 
+
+			//drawText(objectInfo.zt, objectInfo.x - 33, objectInfo.yqsy - 23, 10, "rgba(255, 255, 255, 0.9)", "center", true);//人物状态 
+
+
+
+		}
+
+
+		// ********************* 绘图相关 ********************* 
+
+		//清空画布 
+		function clearCtx() {
+			ctx.clearRect(0, 0, canvasDom.width, canvasDom.height);
+		}
+		//设置线宽 
+		function setLineWidth(w) {
+			ctx.lineWidth = w;
+		}
+		//绘制线条，起始点xy，终点xy，颜色 
+		function drawLine(x1, y1, x2, y2, color) {
+			x1 *= iosScale;
+			y1 *= iosScale;
+			x2 *= iosScale;
+			y2 *= iosScale;
+			ctx.beginPath();
+			ctx.globalAlpha = 1;
+			ctx.lineWidth = 2;
+			ctx.fillStyle = color;
+			ctx.strokeStyle = color;
+			ctx.moveTo(x1, y1);
+			ctx.lineTo(x2, y2);
+			ctx.stroke();
+			ctx.closePath();
+		}
+		//绘制文字，文字内容，起点xy，文字大小，文字对齐，颜色，是否填充文字 
+		function drawText(text, x, y, size, color, textAlign, isFill = true) {
+			x *= iosScale;
+			y *= iosScale;
+			size *= iosScale;
+			ctx.beginPath();
+			ctx.globalAlpha = 1; //透明度 
+			ctx.textAlign = textAlign; //文字对齐 
+			ctx.fillStyle = color;
+			ctx.strokeStyle = color;
+			ctx.font = size + 'px' + fontFamily;
+			if (isFill) {
+				ctx.fillText(text, x, y + size);
+			} else {
+				ctx.strokeText(text, x, y + size);
+			}
+			ctx.closePath();
+		};
+
+		//绘制圆形 中心点xy，圆形半径，颜色，是否填充圆 
+		function drawCircular(x, y, num, size, color, lineWidth, isFill = true) {
+			x *= iosScale;
+			y *= iosScale;
+			size *= iosScale;
+
+			if (num === 100) num = 1;
+			else if (num > 0) num = 1 - num / 100;
+			const d2a = n => n * Math.PI / 180;
+
+			ctx.beginPath();
+			ctx.lineWidth = lineWidth;
+			ctx.arc(x, y, size, d2a(num * 360 - 90), d2a(-90), false);
+			if (isFill) {
+				ctx.fillStyle = color;
+				ctx.fill();
+			} else {
+				ctx.strokeStyle = color;
+				ctx.stroke();
+			}
+			ctx.closePath();
+		}
+
+		//绘制对角矩形 起点xy，矩形宽高，颜色，是否填充（对角方框） 
+		function drawMyRect(x, y, w, h, color, isFill = true) {
+			x *= iosScale;
+			y *= iosScale;
+			w *= iosScale;
+			h *= iosScale;
+
+			ctx.strokeStyle = color;
+			ctx.lineWidth = 1;
+
+			ctx.beginPath();
+
+			ctx.moveTo(x, y);
+			ctx.lineTo(Number(x) + Number(w) / 6, y);
+			ctx.closePath();
+
+			ctx.moveTo(x, y);
+			ctx.lineTo(x, Number(y) + Number(h / 6));
+			ctx.closePath();
+
+			ctx.moveTo(Number(x) + Number(w) - Number(w) / 6, y);
+			ctx.lineTo(Number(x) + Number(w), y);
+			ctx.closePath();
+
+			ctx.moveTo(Number(x) + Number(w), y);
+			ctx.lineTo(Number(x) + Number(w), Number(y) + Number(h / 6));
+			ctx.closePath();
+
+			ctx.moveTo(Number(x), Number(y) + Number(h));
+			ctx.lineTo(Number(x), Number(y) + Number(h) - Number(h / 6));
+			ctx.closePath();
+
+			ctx.moveTo(Number(x), Number(y) + Number(h));
+			ctx.lineTo(Number(x) + Number(w) / 6, Number(y) + Number(h));
+
+			ctx.moveTo(Number(x) + Number(w), Number(y) + Number(h));
+			ctx.lineTo(Number(x) + Number(w) - (w / 6), Number(y) + Number(h));
+
+			ctx.moveTo(Number(x) + Number(w), Number(y) + Number(h));
+			ctx.lineTo(Number(x) + Number(w), Number(y) + Number(h) - Number(h / 6));
+			ctx.closePath();
+			ctx.stroke();
+		}
+
+
+		//绘制矩形 起点xy，矩形宽高，颜色，是否填充矩形 
+		function drawRect(x, y, w, h, color, isFill = true) {
+			x *= iosScale;
+			y *= iosScale;
+			w *= iosScale;
+			h *= iosScale;
+			ctx.lineWidth = 1;
+			ctx.beginPath();
+			ctx.strokeStyle = color;
+			ctx.fillStyle = color;
+			ctx.globalAlpha = 0.6;
+			if (isFill) {
+				ctx.fillRect(x, y, w, h);
+			} else {
+				ctx.strokeRect(x, y, w, h);
+			}
+			ctx.closePath();
+		}
+
+		//绘制圆角矩形，起点xy，矩形宽高，圆角半径，颜色，是否填充矩形 
+		function drawRoundRect(x, y, w, h, r, color, isFill = true) {
+			x *= iosScale;
+			y *= iosScale;
+			w *= iosScale;
+			h *= iosScale;
+			r *= iosScale;
+
+			ctx.beginPath();
+			ctx.strokeStyle = color;
+			ctx.fillStyle = color;
+			if (w < 2 * r) r = w / 2;
+			if (h < 2 * r) r = h / 2;
+			ctx.beginPath();
+			ctx.moveTo(x + r, y);
+			ctx.arcTo(x + w, y, x + w, y + h, r);
+			ctx.arcTo(x + w, y + h, x, y + h, r);
+			ctx.arcTo(x, y + h, x, y, r);
+			ctx.arcTo(x, y, x + w, y, r);
+			if (isFill) {
+				ctx.fill();
+			} else {
+				ctx.stroke();
+			}
+			ctx.closePath();
+		}
+
+		// ********************* 内存相关 ********************* 
+		function readInt(addr) {
+			return Number(h5gg.getValue(addr, "I32"));
+		}
+
+		function readLong(addr) {
+			return Number(h5gg.getValue(addr, "I64"));
+		}
+
+		function readFloat(addr) {
+			return Number(h5gg.getValue(addr, "F32"));
+		}
+
+		function isNull(addr) {
+			return (addr < 0x100000000 || addr > 0x300000000);
+		}
+
+
+
+		// ********************* UE4相关 ********************* 
+		function RotatorToMatrix(rotation) {
+			var radPitch = rotation.Pitch * (Math.PI / 180.0);
+			var radYaw = rotation.Yaw * (Math.PI / 180.0);
+			var radRoll = rotation.Roll * (Math.PI / 180.0);
+
+			var SP = Math.sin(radPitch);
+			var CP = Math.cos(radPitch);
+			var SY = Math.sin(radYaw);
+			var CY = Math.cos(radYaw);
+			var SR = Math.sin(radRoll);
+			var CR = Math.cos(radRoll);
+
+			var matrix = new Array(16).fill(0);
+
+			matrix[0] = (CP * CY);
+			matrix[1] = (CP * SY);
+			matrix[2] = (SP);
+			matrix[3] = 0;
+
+			matrix[4] = (SR * SP * CY - CR * SY);
+			matrix[5] = (SR * SP * SY + CR * CY);
+			matrix[6] = (-SR * CP);
+			matrix[7] = 0;
+
+			matrix[8] = (-(CR * SP * CY + SR * SY));
+			matrix[9] = (CY * SR - CR * SP * SY);
+			matrix[10] = (CR * CP);
+			matrix[11] = 0;
+
+			matrix[12] = 0;
+			matrix[13] = 0;
+			matrix[14] = 0;
+			matrix[15] = 1;
+
+			return matrix;
+		}
+
+
+
+		function vectorDot(lhs, rhs) {
+			return (((lhs.X * rhs.X) + (lhs.Y * rhs.Y)) + (lhs.Z * rhs.Z));
+		}
+
+		function world2Screen(worldLocation, camViewInfo, tempMatrix) {
+			// var tempMatrix = RotatorToMatrix(camViewInfo.Rotation); 
+
+			var vAxisX = {
+				X: tempMatrix[0],
+				Y: tempMatrix[1],
+				Z: tempMatrix[2]
+			};
+			var vAxisY = {
+				X: tempMatrix[4],
+				Y: tempMatrix[5],
+				Z: tempMatrix[6]
+			};
+			var vAxisZ = {
+				X: tempMatrix[8],
+				Y: tempMatrix[9],
+				Z: tempMatrix[10]
+			};
+
+			var vDelta = {
+				X: worldLocation.X - camViewInfo.Location.X,
+				Y: worldLocation.Y - camViewInfo.Location.Y,
+				Z: worldLocation.Z - camViewInfo.Location.Z
+			};
+
+			var vTransformed = {
+				X: vectorDot(vDelta, vAxisY),
+				Y: vectorDot(vDelta, vAxisZ),
+				Z: vectorDot(vDelta, vAxisX)
+			};
+
+			if (vTransformed.Z < 1.0) {
+				vTransformed.Z = 1.0;
+			}
+
+			var fov = camViewInfo.FOV;
+			var screenCenterX = (sWidth / 2.0);
+			var screenCenterY = (sHeight / 2.0);
+
+			var re = {
+				X: (screenCenterX + vTransformed.X * (screenCenterX / Math.tan(fov * (Math.PI / 360.0))) /
+					vTransformed
+					.Z),
+				Y: (screenCenterY - vTransformed.Y * (screenCenterX / Math.tan(fov * (Math.PI / 360.0))) /
+					vTransformed
+					.Z)
+			};
+
+			return re;
+		}
+
+		/***************骨骼函数*******************/
+		function getBoneWorldPos(boneTransAddr, c2wMatrix) {
+			var boneTrans = {
+				Rotation: {
+					x: readFloat(boneTransAddr),
+					y: readFloat(boneTransAddr + 4),
+					z: readFloat(boneTransAddr + 8),
+					w: readFloat(boneTransAddr + 12),
+				},
+				Translation: {
+					X: readFloat(boneTransAddr + 16),
+					Y: readFloat(boneTransAddr + 20),
+					Z: readFloat(boneTransAddr + 24),
+					W: readFloat(boneTransAddr + 28),
+				},
+				Scale3D: {
+					X: readFloat(boneTransAddr + 32),
+					Y: readFloat(boneTransAddr + 36),
+					Z: readFloat(boneTransAddr + 40),
+				},
+			}
+			var boneMatrix = TransformToMatrix(boneTrans);
+			return MatrixToVector(MatrixMulti(boneMatrix, c2wMatrix));
+		}
+
+		function MatrixToVector(matrix) {
+			var Vector3 = {
+				X: matrix[3][0],
+				Y: matrix[3][1],
+				Z: matrix[3][2]
+			}
+			return Vector3;
+		}
+
+		function MatrixMulti(m1, m2) {
+			var matrix = createArrTwo(4, 4, 0);
+			for (var i = 0; i < 4; i++) {
+				for (var j = 0; j < 4; j++) {
+					for (var k = 0; k < 4; k++) {
+						matrix[i][j] += m1[i][k] * m2[k][j];
+					}
+				}
+			}
+			return matrix;
+		}
+
+		function TransformToMatrix(transform) {
+			var matrix = createArrTwo(4, 4, 0);
+
+			matrix[3][0] = transform.Translation.X;
+			matrix[3][1] = transform.Translation.Y;
+			matrix[3][2] = transform.Translation.Z;
+
+			var x2 = transform.Rotation.x + transform.Rotation.x;
+			var y2 = transform.Rotation.y + transform.Rotation.y;
+			var z2 = transform.Rotation.z + transform.Rotation.z;
+
+			var xx2 = transform.Rotation.x * x2;
+			var yy2 = transform.Rotation.y * y2;
+			var zz2 = transform.Rotation.z * z2;
+
+			matrix[0][0] = (1.0 - (yy2 + zz2)) * transform.Scale3D.X;
+			matrix[1][1] = (1.0 - (xx2 + zz2)) * transform.Scale3D.Y;
+			matrix[2][2] = (1.0 - (xx2 + yy2)) * transform.Scale3D.Z;
+
+			var yz2 = transform.Rotation.y * z2;
+			var wx2 = transform.Rotation.w * x2;
+			matrix[2][1] = (yz2 - wx2) * transform.Scale3D.Z;
+			matrix[1][2] = (yz2 + wx2) * transform.Scale3D.Y;
+
+			var xy2 = transform.Rotation.x * y2;
+			var wz2 = transform.Rotation.w * z2;
+			matrix[1][0] = (xy2 - wz2) * transform.Scale3D.Y;
+			matrix[0][1] = (xy2 + wz2) * transform.Scale3D.X;
+
+			var xz2 = transform.Rotation.x * z2;
+			var wy2 = transform.Rotation.w * y2;
+			matrix[2][0] = (xz2 + wy2) * transform.Scale3D.Z;
+			matrix[0][2] = (xz2 - wy2) * transform.Scale3D.X;
+
+			matrix[0][3] = 0;
+			matrix[1][3] = 0;
+			matrix[2][3] = 0;
+			matrix[3][3] = 1;
+
+			return matrix;
+		}
+
+		function createArrTwo(num1, num2, data) {
+			let arr = new Array(num1)
+			for (let i = 0; i < num1; ++i) {
+				arr[i] = new Array(num2)
+				for (let x = 0; x < num2; ++x) {
+					arr[i][x] = data
+				}
+			}
+			return arr
+		}
+		/***************骨骼函数*******************/
+
+
+		// 开启缓存 
+		function onCache() {
+			cacheTimer = setInterval(function() {
+				drawCache();
+			}, 400)
+		}
+
+		// 关闭缓存 
+		function offCache() {
+			clearInterval(cacheTimer);
+			cacheTimer = null;
+		}
+		drawTimer = setInterval(function() {
+			if (window.draw_state) {
+				shadowDraw();
+
+				//计算FPS 
+				if (!window.fpscount) window.fpscount = 0;
+				if (!window.fpstime) window.fpstime = performance.now();
+				window.fpscount++;
+				if ((performance.now() - window.fpstime) > 2000) {
+					window.fps = window.fpscount;
+					window.fpstime = performance.now();
+					window.fpscount = 0;
+				}
+				ctx.textBaseline = "top";
+				ctx.textAlign = "center";
+				ctx.font = '40px "Arial, sans-serif"';
+				ctx.fillStyle = "red";
+				//if (window.fps) ctx.fillText("FPS: " + window.fps, 150, 50); //绘制FPS 
+			} else {
+				clearCtx();
+			}
+		}, 16);
+	</script>
+</html>
